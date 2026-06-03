@@ -4,28 +4,50 @@ class PluginIfluxNotification {
    /**
     * Dispara a notificação Push via Expo para todos os técnicos atribuídos ao chamado
     */
-   static function notifyAssignedTechnicians($ticketId, $title, $message) {
+   /**
+    * Dispara a notificação Push via Expo para todos os atores associados ao chamado (Requerentes, Técnicos, Observadores)
+    * exceto o próprio autor da ação (evitando autofeedback).
+    */
+   static function notifyTicketActors($ticketId, $title, $message) {
       global $DB;
       
-      // Buscar quem é o técnico atribuído ao chamado
+      // Obter o ID do usuário atualmente logado (autor da ação)
+      $authorId = 0;
+      if (class_exists('Session')) {
+         $authorId = Session::getLoginUserID();
+      }
+      
+      // Buscar todos os atores associados ao chamado (requerentes, técnicos e observadores)
       $result = $DB->request([
          'SELECT' => 'users_id',
          'FROM'   => 'glpi_tickets_users',
          'WHERE'  => [
             'tickets_id' => $ticketId,
-            'type'       => CommonITILActor::ASSIGN
+            'users_id'   => ['>', 0]
          ]
       ]);
       
       $sentCount = 0;
+      $notifiedUsers = [];
+      
       foreach ($result as $row) {
-         $technicianId = $row['users_id'];
+         $userId = $row['users_id'];
          
-         // Buscar o token de push deste técnico na nossa tabela do plugin
+         // 1. Ignorar o autor da ação (não enviar push para si mesmo)
+         if ($userId == $authorId) {
+            continue;
+         }
+         
+         // 2. Evitar duplicidade caso o usuário esteja em mais de uma função (ex: Técnico e Observador)
+         if (in_array($userId, $notifiedUsers)) {
+            continue;
+         }
+         
+         // Buscar o token de push deste usuário na nossa tabela do plugin
          $tokenResult = $DB->request([
             'SELECT' => 'pushtoken',
             'FROM'   => 'glpi_plugin_iflux_pushtokens',
-            'WHERE'  => ['users_id' => $technicianId]
+            'WHERE'  => ['users_id' => $userId]
          ]);
          
          if ($tokenRow = $tokenResult->current()) {
@@ -41,16 +63,18 @@ class PluginIfluxNotification {
                }
             }
             
-            // Grava o log no banco de dados
+            // Grava o log detalhado de notificação no banco de dados do GLPI
             $DB->insert('glpi_plugin_iflux_logs', [
                'date_creation' => date('Y-m-d H:i:s'),
                'tickets_id'    => $ticketId,
-               'users_id'     => $technicianId,
+               'users_id'      => $userId,
                'title'         => $title,
                'message'       => $message,
                'status'        => $status,
                'response'      => $response ? $response : 'Sem resposta do Expo'
             ]);
+            
+            $notifiedUsers[] = $userId;
             $sentCount++;
          }
       }
@@ -77,7 +101,7 @@ class PluginIfluxNotification {
       $ticketName = $ticket->fields['name'] ?? 'Novo Chamado';
       
       $title = "Novo Chamado (#$ticketId)";
-      self::notifyAssignedTechnicians($ticketId, $title, $ticketName);
+      self::notifyTicketActors($ticketId, $title, $ticketName);
    }
 
    /**
@@ -95,7 +119,7 @@ class PluginIfluxNotification {
       }
       
       $title = "Chamado Atualizado (#$ticketId)" . $statusText;
-      self::notifyAssignedTechnicians($ticketId, $title, $ticketName);
+      self::notifyTicketActors($ticketId, $title, $ticketName);
    }
 
    /**
@@ -125,7 +149,7 @@ class PluginIfluxNotification {
       $title = "Novo Acompanhamento (#$ticketId)";
       $message = "No chamado: $ticketName\n\"$contentTruncated\"";
       
-      self::notifyAssignedTechnicians($ticketId, $title, $message);
+      self::notifyTicketActors($ticketId, $title, $message);
    }
 
    /**
@@ -155,7 +179,7 @@ class PluginIfluxNotification {
       $title = "Nova Tarefa (#$ticketId)";
       $message = "No chamado: $ticketName\n\"$contentTruncated\"";
       
-      self::notifyAssignedTechnicians($ticketId, $title, $message);
+      self::notifyTicketActors($ticketId, $title, $message);
    }
    
    static function sendToExpo($token, $title, $body, $data = []) {

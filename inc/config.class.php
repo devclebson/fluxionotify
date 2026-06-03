@@ -63,21 +63,72 @@ class PluginIfluxConfig extends CommonDBTM {
       echo "<tr><th colspan='2'>Configuração do Servidor iFlux (Mobile)</th></tr>";
       
       echo "<tr class='tab_bg_1'><td>URL Base do GLPI</td>";
-      echo "<td><input type='text' name='api_url' value='".$data['api_url']."' size='50'></td></tr>";
+      echo "<td><input type='text' name='api_url' value='".$data['api_url']."' size='50' style='margin: 0;'></td></tr>";
 
       echo "<tr class='tab_bg_1'><td>App-Token da API</td>";
-      echo "<td><input type='text' name='app_token' value='".$data['app_token']."' size='50'></td></tr>";
+      echo "<td>";
+      echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
+      echo "<input type='password' id='app_token' name='app_token' value='".htmlentities($data['app_token'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"app_token\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"app_token\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
+      echo "</div>";
+      echo "</td></tr>";
 
       echo "<tr class='tab_bg_1'><td>Client ID (OAuth2)</td>";
-      echo "<td><input type='text' name='client_id' value='".$data['client_id']."' size='50'></td></tr>";
+      echo "<td>";
+      echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
+      echo "<input type='password' id='client_id' name='client_id' value='".htmlentities($data['client_id'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"client_id\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"client_id\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
+      echo "</div>";
+      echo "</td></tr>";
 
       echo "<tr class='tab_bg_1'><td>Client Secret (OAuth2)</td>";
-      echo "<td><input type='text' name='client_secret' value='".$data['client_secret']."' size='50'></td></tr>";
+      echo "<td>";
+      echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
+      echo "<input type='password' id='client_secret' name='client_secret' value='".htmlentities($data['client_secret'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"client_secret\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
+      echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"client_secret\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
+      echo "</div>";
+      echo "</td></tr>";
 
       echo "<tr class='tab_bg_2'><td colspan='2' class='center'>";
       echo "<input type='submit' name='update' class='submit' value='Salvar Configurações'>";
       echo "<input type='hidden' name='_glpi_csrf_token' value='".Session::getNewCSRFToken()."' />";
       echo "</td></tr></table></form>";
+
+      echo "<script>
+         function toggleVisibility(id, btn) {
+            var input = document.getElementById(id);
+            var icon = btn.querySelector('i');
+            if (input.type === 'password') {
+               input.type = 'text';
+               if (icon) {
+                  icon.className = 'ti ti-eye-off';
+               }
+            } else {
+               input.type = 'password';
+               if (icon) {
+                  icon.className = 'ti ti-eye';
+               }
+            }
+         }
+
+         function pasteFromClipboard(id) {
+            if (!navigator.clipboard) {
+               alert('Acesso à área de transferência bloqueado pelo navegador. Por favor, use Ctrl+V para colar manualmente.');
+               return;
+            }
+            navigator.clipboard.readText().then(function(text) {
+               if (text) {
+                  var input = document.getElementById(id);
+                  input.value = text;
+               }
+            }).catch(function(err) {
+               alert('Permissão para colar negada ou bloqueada. Por favor, use Ctrl+V para colar manualmente.');
+            });
+         }
+      </script>";
 
       // Lógica do QR Code
       if (!empty($data['app_token']) && !empty($data['api_url'])) {

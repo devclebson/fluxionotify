@@ -1,7 +1,7 @@
 <?php
 class PluginIfluxPushtoken extends CommonDBTM {
    
-   static $rightname = 'config';
+   static $rightname = 'plugin_iflux';
 
    static function getTypeName($nb = 0) {
       return 'Token de Push iFlux';
@@ -30,12 +30,24 @@ class PluginIfluxPushtoken extends CommonDBTM {
    function canUpdateItem(): bool {
       // Permite atualizar se for o próprio dono ou admin
       return Session::getLoginUserID() > 0 && 
-             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('config', UPDATE));
+             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('plugin_iflux', UPDATE));
    }
 
    function canViewItem(): bool {
       // Permite visualizar se for o próprio dono ou admin
       return Session::getLoginUserID() > 0 && 
-             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('config', READ));
+             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('plugin_iflux', READ));
+   }
+
+   function prepareInputForAdd($input) {
+      if (isset($input['users_id'])) {
+         $targetUserId = (int)$input['users_id'];
+         
+         // Se não for admin e tentar salvar para outro usuário, cancela a operação
+         if (!Session::haveRight('plugin_iflux', UPDATE) && $targetUserId !== Session::getLoginUserID()) {
+            return false;
+         }
+      }
+      return parent::prepareInputForAdd($input);
    }
 }

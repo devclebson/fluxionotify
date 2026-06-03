@@ -1,32 +1,51 @@
 <?php
 class PluginIfluxConfig extends CommonDBTM {
    
-   static $rightname = 'config';
+   static $rightname = 'plugin_iflux';
    
    static function getTypeName($nb = 0) {
       return 'Configuração iFlux';
    }
 
-   function showFormConfig($tab = 'config') {
-      global $DB, $CFG_GLPI;
-
-      // 1. Renderizar Barra de Abas Estilizada
-      echo "<div class='center' style='margin-bottom: 25px; margin-top: 15px;'>";
-      echo "<a href='config.php?tab=config' style='margin: 0 5px; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; background: ".($tab == 'config' ? '#143860; color: white;' : '#f0f0f0; color: #333; border: 1px solid #ccc;')."'>Configuração</a>";
-      echo "<a href='config.php?tab=tokens' style='margin: 0 5px; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; background: ".($tab == 'tokens' ? '#143860; color: white;' : '#f0f0f0; color: #333; border: 1px solid #ccc;')."'>Tokens de Push</a>";
-      echo "<a href='config.php?tab=logs' style='margin: 0 5px; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; background: ".($tab == 'logs' ? '#143860; color: white;' : '#f0f0f0; color: #333; border: 1px solid #ccc;')."'>Logs de Envio</a>";
-      echo "</div>";
-
-      if ($tab === 'tokens') {
-         $this->showTokensList();
-      } else if ($tab === 'logs') {
-         $this->showLogsList();
-      } else {
-         $this->showConfigFormSection();
-      }
+   static function getIcon() {
+      return 'ti ti-device-mobile';
    }
 
-   private function showConfigFormSection() {
+   public function defineTabs($options = []) {
+      $ong = [];
+      $this->addStandardTab(__CLASS__, $ong, $options);
+      return $ong;
+   }
+
+   public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
+      if ($item->getType() === __CLASS__) {
+         return [
+            1 => 'Configuração',
+            2 => 'Dispositivos Registrados',
+            3 => 'Logs de Notificação'
+         ];
+      }
+      return '';
+   }
+
+   public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0) {
+      if ($item->getType() === __CLASS__) {
+         switch ($tabnum) {
+            case 1:
+               $item->showConfigFormSection();
+               break;
+            case 2:
+               $item->showTokensList();
+               break;
+            case 3:
+               $item->showLogsList();
+               break;
+         }
+      }
+      return true;
+   }
+
+   public function showConfigFormSection() {
       global $DB, $CFG_GLPI;
 
       // Busca as configurações no banco
@@ -38,7 +57,7 @@ class PluginIfluxConfig extends CommonDBTM {
          'client_secret' => ''
       ];
 
-      echo "<div class='center'>";
+      echo "<div class='center' style='margin-top: 15px;'>";
       echo "<form action='config.php' method='post'>";
       echo "<table class='tab_cadre_fixe'>";
       echo "<tr><th colspan='2'>Configuração do Servidor iFlux (Mobile)</th></tr>";
@@ -68,14 +87,40 @@ class PluginIfluxConfig extends CommonDBTM {
             'client_id'     => $data['client_id'],
             'client_secret' => $data['client_secret']
          ]);
+         
+         $jsFile = dirname(__DIR__) . '/js/qrcode.min.js';
+         if (file_exists($jsFile)) {
+            echo "<script>" . file_get_contents($jsFile) . "</script>";
+         } else {
+            $jsPath = Plugin::getWebDir('iflux') . '/js/qrcode.min.js';
+            echo "<script src='$jsPath' onload='initIfluxQrCode()'></script>";
+         }
          echo "<h3>QR Code para Configuração do App</h3>";
-         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" . urlencode($qrData);
-         echo "<img src='$qrUrl' style='border:10px solid #fff; box-shadow: 0 0 10px #ccc;' />";
+         echo "<div id='qrcode' style='display: inline-block; padding: 10px; background: #fff; border: 10px solid #fff; box-shadow: 0 0 10px #ccc; margin-bottom: 20px;'></div>";
+         
+         echo "<script>
+            function initIfluxQrCode() {
+               var el = document.getElementById('qrcode');
+               if (el && !el.hasChildNodes()) {
+                  new QRCode(el, {
+                     text: " . json_encode($qrData) . ",
+                     width: 200,
+                     height: 200,
+                     colorDark : '#000000',
+                     colorLight : '#ffffff',
+                     correctLevel : QRCode.CorrectLevel.H
+                  });
+               }
+            }
+            if (typeof QRCode !== 'undefined') {
+               initIfluxQrCode();
+            }
+         </script>";
       }
       echo "</div>";
    }
 
-   private function showTokensList() {
+   public function showTokensList() {
       global $DB;
 
       $query = [
@@ -132,7 +177,7 @@ class PluginIfluxConfig extends CommonDBTM {
       echo "</div>";
    }
 
-   private function showLogsList() {
+   public function showLogsList() {
       global $DB;
 
       $query = [
@@ -189,18 +234,38 @@ class PluginIfluxConfig extends CommonDBTM {
                "<span style='background: #2fe417; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>Sucesso</span>" : 
                "<span style='background: #f44336; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>Falha</span>";
 
-            $responseClean = $row['response'];
-            // Truncar resposta longa
-            $responseTrunc = strlen($responseClean) > 40 ? substr($responseClean, 0, 40) . '...' : $responseClean;
+             $responseClean = $row['response'];
+             $friendlyResponse = '';
+             $resJson = json_decode($responseClean, true);
+             if (isset($resJson['data'][0])) {
+                $item = $resJson['data'][0];
+                if (isset($item['status'])) {
+                   if ($item['status'] === 'ok') {
+                      $friendlyResponse = "Enviado";
+                   } else {
+                      $errMsg = $item['message'] ?? 'Erro desconhecido';
+                      $errCode = $item['details']['error'] ?? '';
+                      $friendlyResponse = "Erro: " . ($errCode ? "[$errCode] " : "") . $errMsg;
+                   }
+                }
+             }
+             if (empty($friendlyResponse)) {
+                $friendlyResponse = $responseClean;
+             }
+             $responseTrunc = strlen($friendlyResponse) > 60 ? substr($friendlyResponse, 0, 60) . '...' : $friendlyResponse;
 
             echo "<tr class='tab_bg_1'>";
             echo "<td>".$row['date_creation']."</td>";
-            echo "<td><a href='../front/ticket.form.php?id=".$row['tickets_id']."' target='_blank'>#".$row['tickets_id']."</a></td>";
+            echo "<td><a href='../../../front/ticket.form.php?id=".$row['tickets_id']."' target='_blank'>#".$row['tickets_id']."</a></td>";
             echo "<td>".htmlentities($userLabel)."</td>";
             echo "<td>".htmlentities($row['title'])."</td>";
             echo "<td>".htmlentities($row['message'])."</td>";
             echo "<td>".$statusLabel."</td>";
-            echo "<td title='".htmlentities($responseClean)."'><code>".htmlentities($responseTrunc)."</code></td>";
+             $escResponse = htmlentities($responseClean, ENT_QUOTES, 'UTF-8');
+             echo "<td style='position: relative; padding-right: 65px; min-width: 200px;' title='".$escResponse."'>";
+             echo "<code>".htmlentities($responseTrunc)."</code>";
+             echo "<button type='button' style='position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 2px 6px; font-size: 10px; margin: 0; background: #2196f3; color: white; border: none; border-radius: 3px; cursor: pointer; transition: background 0.2s; font-weight: bold;' onclick='var btn=this; navigator.clipboard.writeText(btn.getAttribute(\"data-text\")).then(function(){ btn.innerText=\"Copiado!\"; btn.style.background=\"#2fe417\"; setTimeout(function(){ btn.innerText=\"Copiar\"; btn.style.background=\"#2196f3\"; }, 1500); })' data-text='".$escResponse."'>Copiar</button>";
+             echo "</td>";
             echo "</tr>";
          }
       }

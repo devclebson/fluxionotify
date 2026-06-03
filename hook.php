@@ -59,6 +59,47 @@ function plugin_iflux_install() {
    // A classe Migration deve assumir a execução.
    $migration->executeMigration();
 
+   // Registrar o direito 'plugin_iflux' na tabela glpi_profilerights
+   if (class_exists('ProfileRight')) {
+      ProfileRight::addProfileRights(['plugin_iflux']);
+
+      // Buscar o perfil super-admin (por ID 4 ou variações de nome) e conceder permissões completas (31)
+      $profileResult = $DB->request([
+         'FROM'  => 'glpi_profiles',
+         'WHERE' => [
+            'OR' => [
+               'name' => ['super-admin', 'Super-Admin'],
+               'id'   => 4
+            ]
+         ]
+      ]);
+      if ($profileRow = $profileResult->current()) {
+         $superadminId = $profileRow['id'];
+         
+         // Verificar se já existe registro em glpi_profilerights
+         $rightResult = $DB->request([
+            'FROM'  => 'glpi_profilerights',
+            'WHERE' => [
+               'profiles_id' => $superadminId,
+               'name'        => 'plugin_iflux'
+            ]
+         ]);
+         
+         if (count($rightResult) === 0) {
+            $DB->insert('glpi_profilerights', [
+               'profiles_id' => $superadminId,
+               'name'        => 'plugin_iflux',
+               'rights'      => 31 // LER (1) | ATUALIZAR (2) | CRIAR (4) | EXCLUIR (8) | APAGAR (16)
+            ]);
+         } else {
+            $DB->update('glpi_profilerights', ['rights' => 31], [
+               'profiles_id' => $superadminId,
+               'name'        => 'plugin_iflux'
+            ]);
+         }
+      }
+   }
+
    return true;
 }
 
@@ -78,14 +119,42 @@ function plugin_iflux_uninstall() {
       }
    }
 
+   // Remover direitos registrados
+   if (class_exists('ProfileRight')) {
+      ProfileRight::deleteProfileRights(['plugin_iflux']);
+   }
+
    return true;
 }
 
 /**
  * Função Hook engatilhada sempre que um Chamado (Ticket) for criado no GLPI.
- * Ela vai acionar a nossa classe de Notificações nativa.
  */
 function plugin_iflux_item_add_ticket(Ticket $ticket) {
    include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
    PluginIfluxNotification::sendForTicket($ticket);
+}
+
+/**
+ * Função Hook engatilhada sempre que um Chamado (Ticket) for atualizado no GLPI.
+ */
+function plugin_iflux_item_update_ticket(Ticket $ticket) {
+   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
+   PluginIfluxNotification::sendForTicketUpdate($ticket);
+}
+
+/**
+ * Função Hook engatilhada sempre que um Acompanhamento (ITILFollowup) for criado no GLPI.
+ */
+function plugin_iflux_item_add_followup(ITILFollowup $followup) {
+   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
+   PluginIfluxNotification::sendForFollowup($followup);
+}
+
+/**
+ * Função Hook engatilhada sempre que uma Tarefa (TicketTask) for criada no GLPI.
+ */
+function plugin_iflux_item_add_task(TicketTask $task) {
+   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
+   PluginIfluxNotification::sendForTask($task);
 }

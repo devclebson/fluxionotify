@@ -10,15 +10,23 @@ function plugin_init_iflux() {
    Plugin::registerClass('PluginIfluxConfig');
    Plugin::registerClass('PluginIfluxPushtoken');
    Plugin::registerClass('PluginIfluxNotification'); // Registra a classe de push
+   Plugin::registerClass('PluginIfluxProfile', ['addtabon' => ['Profile']]);
 
    if (class_exists('PluginIfluxConfig')) {
       $PLUGIN_HOOKS['menu_toadd']['iflux'] = ['config' => 'PluginIfluxConfig'];
    }
 
-   // Ativa o envio de push ao criar chamados
-   $PLUGIN_HOOKS['item_add']['iflux'] = [
-      'Ticket' => 'plugin_iflux_item_add_ticket'
-   ];
+    // Ativa o envio de push ao criar chamados, acompanhamentos e tarefas
+    $PLUGIN_HOOKS['item_add']['iflux'] = [
+       'Ticket'       => 'plugin_iflux_item_add_ticket',
+       'ITILFollowup' => 'plugin_iflux_item_add_followup',
+       'TicketTask'   => 'plugin_iflux_item_add_task'
+    ];
+
+    // Ativa o envio de push ao atualizar chamados
+    $PLUGIN_HOOKS['item_update']['iflux'] = [
+       'Ticket'       => 'plugin_iflux_item_update_ticket'
+    ];
 }
 
 function plugin_version_iflux() {

@@ -8,7 +8,7 @@ class PluginIfluxNotification {
     * Dispara a notificação Push via Expo para todos os atores associados ao chamado (Requerentes, Técnicos, Observadores)
     * exceto o próprio autor da ação (evitando autofeedback).
     */
-   static function notifyTicketActors($ticketId, $title, $message) {
+   static function notifyTicketActors($ticketId, $title, $message, $categoryId = null) {
       global $DB;
       
       // Obter o ID do usuário atualmente logado (autor da ação)
@@ -52,8 +52,7 @@ class PluginIfluxNotification {
          
          if ($tokenRow = $tokenResult->current()) {
             $pushToken = $tokenRow['pushtoken'];
-            
-            $response = self::sendToExpo($pushToken, $title, $message, ['ticketId' => $ticketId]);
+            $response = self::sendToExpo($pushToken, $title, $message, ['ticketId' => $ticketId], $categoryId);
             
             $status = 'error';
             if ($response) {
@@ -101,7 +100,7 @@ class PluginIfluxNotification {
       $ticketName = $ticket->fields['name'] ?? 'Novo Chamado';
       
       $title = "Novo Chamado (#$ticketId)";
-      self::notifyTicketActors($ticketId, $title, $ticketName);
+      self::notifyTicketActors($ticketId, $title, $ticketName, 'TICKET_NEW');
    }
 
    /**
@@ -182,17 +181,19 @@ class PluginIfluxNotification {
       self::notifyTicketActors($ticketId, $title, $message);
    }
    
-   static function sendToExpo($token, $title, $body, $data = []) {
-      $payload = [
-         [
-            "to" => $token,
-            "title" => $title,
-            "body" => $body,
-            "sound" => "default",
-            "channelId" => "default",
-            "data" => $data
-         ]
+   static function sendToExpo($token, $title, $body, $data = [], $categoryId = null) {
+      $notification = [
+         "to" => $token,
+         "title" => $title,
+         "body" => $body,
+         "sound" => "default",
+         "channelId" => "default",
+         "data" => $data
       ];
+      if ($categoryId) {
+         $notification["categoryId"] = $categoryId;
+      }
+      $payload = [ $notification ];
 
       $ch = curl_init("https://exp.host/--/api/v2/push/send");
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);

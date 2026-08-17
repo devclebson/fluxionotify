@@ -35,6 +35,6 @@ function plugin_version_iflux() {
       'version'        => PLUGIN_IFLUX_VERSION,
       'author'         => 'iFlux',
       'license'        => 'GPLv2+',
-      'requirements'   => ['glpi' => ['min' => '11.0.0']]
+      'requirements'   => ['glpi' => ['min' => '10.0.0']]
    ];
 }

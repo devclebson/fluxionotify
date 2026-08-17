@@ -65,19 +65,21 @@ class PluginIfluxConfig extends CommonDBTM {
       echo "<tr class='tab_bg_1'><td>URL Base do GLPI</td>";
       echo "<td><input type='text' name='api_url' value='".$data['api_url']."' size='50' style='margin: 0;'></td></tr>";
 
+      echo "<tr class='tab_bg_2'><th colspan='2' style='text-align: left; padding-left: 20px; font-weight: bold; font-size: 14px;'>Configurações GLPI 10 (API Legada)</th></tr>";
       echo "<tr class='tab_bg_1'><td>App-Token da API</td>";
       echo "<td>";
       echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
-      echo "<input type='password' id='app_token' name='app_token' value='".htmlentities($data['app_token'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<input type='password' id='app_token' name='app_token' value='".htmlentities($data['app_token'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;' placeholder='Preencha apenas se for usar o GLPI 10'>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"app_token\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"app_token\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
       echo "</div>";
       echo "</td></tr>";
 
+      echo "<tr class='tab_bg_2'><th colspan='2' style='text-align: left; padding-left: 20px; font-weight: bold; font-size: 14px;'>Configurações GLPI 11 (API v2 - OAuth2)</th></tr>";
       echo "<tr class='tab_bg_1'><td>Client ID (OAuth2)</td>";
       echo "<td>";
       echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
-      echo "<input type='password' id='client_id' name='client_id' value='".htmlentities($data['client_id'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<input type='password' id='client_id' name='client_id' value='".htmlentities($data['client_id'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;' placeholder='Preencha apenas se for usar o GLPI 11'>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"client_id\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"client_id\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
       echo "</div>";
@@ -86,7 +88,7 @@ class PluginIfluxConfig extends CommonDBTM {
       echo "<tr class='tab_bg_1'><td>Client Secret (OAuth2)</td>";
       echo "<td>";
       echo "<div style='display: inline-flex; align-items: center; gap: 6px; width: 100%; max-width: 500px;'>";
-      echo "<input type='password' id='client_secret' name='client_secret' value='".htmlentities($data['client_secret'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;'>";
+      echo "<input type='password' id='client_secret' name='client_secret' value='".htmlentities($data['client_secret'] ?? '')."' size='50' style='flex-grow: 1; margin: 0;' placeholder='Preencha apenas se for usar o GLPI 11'>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='toggleVisibility(\"client_secret\", this)' title='Visualizar'><i class='ti ti-eye'></i></button>";
       echo "<button type='button' class='btn btn-icon btn-outline-secondary' style='height: 35px; min-width: 38px; display: inline-flex; align-items: center; justify-content: center; margin: 0;' onclick='pasteFromClipboard(\"client_secret\")' title='Colar'><i class='ti ti-clipboard'></i></button>";
       echo "</div>";
@@ -130,14 +132,29 @@ class PluginIfluxConfig extends CommonDBTM {
          }
       </script>";
 
-      // Lógica do QR Code
-      if (!empty($data['app_token']) && !empty($data['api_url'])) {
-         $qrData = json_encode([
-            'url'           => rtrim($data['api_url'], '/'),
-            'token'         => $data['app_token'],
-            'client_id'     => $data['client_id'],
-            'client_secret' => $data['client_secret']
-         ]);
+      // Lógica do QR Code Criptografado
+      if (!empty($data['api_url'])) {
+         $isGlpi11 = !empty($data['client_id']);
+         
+         $qrDataPayload = [
+            'url'     => rtrim($data['api_url'], '/'),
+            'version' => $isGlpi11 ? '11' : '10'
+         ];
+         
+         if ($isGlpi11) {
+             $qrDataPayload['client_id'] = $data['client_id'];
+             $qrDataPayload['client_secret'] = $data['client_secret'];
+         } else {
+             $qrDataPayload['token'] = $data['app_token'];
+         }
+
+         $secretKey = "iFlux@AppSync#2026";
+         $qrJson = json_encode($qrDataPayload);
+         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
+         $encrypted = openssl_encrypt($qrJson, 'aes-256-cbc', $secretKey, 0, $iv);
+         
+         // Base64 duplo para garantir leitura segura no app
+         $finalQrText = base64_encode($encrypted . '::' . base64_encode($iv));
          
          $jsFile = dirname(__DIR__) . '/js/qrcode.min.js';
          if (file_exists($jsFile)) {
@@ -146,7 +163,10 @@ class PluginIfluxConfig extends CommonDBTM {
             $jsPath = Plugin::getWebDir('iflux') . '/js/qrcode.min.js';
             echo "<script src='$jsPath' onload='initIfluxQrCode()'></script>";
          }
-         echo "<h3>QR Code para Configuração do App</h3>";
+         
+         $versionText = $isGlpi11 ? "GLPI 11 (OAuth2)" : "GLPI 10 (App-Token)";
+         echo "<h3>QR Code Seguro para App iFlux ($versionText)</h3>";
+         echo "<p style='color: #666; font-size: 12px;'>Este QR Code está criptografado (AES-256-CBC) e só pode ser lido pelo aplicativo oficial.</p>";
          echo "<div id='qrcode' style='display: inline-block; padding: 10px; background: #fff; border: 10px solid #fff; box-shadow: 0 0 10px #ccc; margin-bottom: 20px;'></div>";
          
          echo "<script>
@@ -154,7 +174,7 @@ class PluginIfluxConfig extends CommonDBTM {
                var el = document.getElementById('qrcode');
                if (el && !el.hasChildNodes()) {
                   new QRCode(el, {
-                     text: " . json_encode($qrData) . ",
+                     text: " . json_encode($finalQrText) . ",
                      width: 200,
                      height: 200,
                      colorDark : '#000000',

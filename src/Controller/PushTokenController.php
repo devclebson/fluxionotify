@@ -1,0 +1,49 @@
+<?php
+namespace GlpiPlugin\Iflux\Controller;
+
+use Glpi\Controller\AbstractController;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use PluginIfluxPushtoken;
+
+class PushTokenController extends AbstractController {
+
+    #[Route("/iflux/pushtoken", name: "plugin_iflux_pushtoken_update", methods: ["POST", "PUT"])]
+    public function updateToken(Request $request): JsonResponse {
+        $user_id = \Session::getLoginUserID();
+        
+        if (!$user_id) {
+            return new JsonResponse(['error' => 'Acesso negado ou sessão inválida.'], 401);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $pushToken = $data['pushtoken'] ?? '';
+
+        if (empty($pushToken)) {
+            return new JsonResponse(['error' => 'Token não fornecido.'], 400);
+        }
+
+        $tokenItem = new PluginIfluxPushtoken();
+        
+        // Verifica se o token já existe para este usuário
+        $found = $tokenItem->find(['users_id' => $user_id]);
+
+        if (count($found) > 0) {
+            // Atualiza
+            $existing = reset($found);
+            $tokenItem->update([
+                'id'        => $existing['id'],
+                'pushtoken' => $pushToken
+            ]);
+        } else {
+            // Cria
+            $tokenItem->add([
+                'users_id'  => $user_id,
+                'pushtoken' => $pushToken
+            ]);
+        }
+
+        return new JsonResponse(['success' => true, 'message' => 'Token salvo com sucesso.']);
+    }
+}

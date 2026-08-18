@@ -55,6 +55,22 @@ function plugin_iflux_install() {
       $migration->addPostQuery($query);
    }
 
+   // Tabela para armazenar os logs de requisições recebidas pela API customizada
+   if (!$DB->tableExists('glpi_plugin_iflux_logs_api')) {
+      $query = "CREATE TABLE `glpi_plugin_iflux_logs_api` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `date_creation` datetime DEFAULT NULL,
+                  `ip_address` varchar(100) DEFAULT NULL,
+                  `method` varchar(10) DEFAULT NULL,
+                  `endpoint` varchar(255) DEFAULT NULL,
+                  `payload` text DEFAULT NULL,
+                  `status_code` int(11) DEFAULT NULL,
+                  `response` text DEFAULT NULL,
+                  PRIMARY KEY (`id`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+      $migration->addPostQuery($query);
+   }
+
    // No GLPI 11, executar queries diretamente é bloqueado por segurança.
    // A classe Migration deve assumir a execução.
    $migration->executeMigration();
@@ -110,7 +126,8 @@ function plugin_iflux_uninstall() {
    $tables = [
       'glpi_plugin_iflux_pushtokens',
       'glpi_plugin_iflux_configs',
-      'glpi_plugin_iflux_logs'
+      'glpi_plugin_iflux_logs',
+      'glpi_plugin_iflux_logs_api'
    ];
 
    foreach ($tables as $table) {

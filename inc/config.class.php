@@ -20,9 +20,11 @@ class PluginIfluxConfig extends CommonDBTM {
    public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0) {
       if ($item->getType() === __CLASS__) {
          return [
-            1 => 'Configuração',
-            2 => 'Dispositivos Registrados',
-            3 => 'Logs de Notificação'
+            1 => 'Bem-vindo',
+            2 => 'Configuração',
+            3 => 'Dispositivos Registrados',
+            4 => 'Logs de Notificação',
+            5 => 'Logs da API'
          ];
       }
       return '';
@@ -32,17 +34,44 @@ class PluginIfluxConfig extends CommonDBTM {
       if ($item->getType() === __CLASS__) {
          switch ($tabnum) {
             case 1:
-               $item->showConfigFormSection();
+               $item->showWelcomeTab();
                break;
             case 2:
-               $item->showTokensList();
+               $item->showConfigFormSection();
                break;
             case 3:
+               $item->showTokensList();
+               break;
+            case 4:
                $item->showLogsList();
+               break;
+            case 5:
+               $item->showApiLogsList();
                break;
          }
       }
       return true;
+   }
+
+   public function showWelcomeTab() {
+      echo "<div class='center' style='margin-top: 15px;'>";
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr><th colspan='2'>Bem-vindo ao Plugin iFlux App Sync</th></tr>";
+      echo "<tr class='tab_bg_1'><td colspan='2' style='padding: 20px; text-align: left; font-size: 14px; line-height: 1.6;'>";
+      echo "<h2>O que este plugin faz?</h2>";
+      echo "<p>O <b>iFlux App Sync</b> é a ponte de comunicação oficial entre o seu servidor GLPI e o aplicativo mobile iFlux. Ele gerencia:</p>";
+      echo "<ul>";
+      echo "<li>Sincronização de Tokens de Push Notification (Expo) para cada usuário.</li>";
+      echo "<li>Autenticação segura e geração de QR Code criptografado para facilitar o login no App.</li>";
+      echo "<li>Disparo de alertas e logs de notificação em tempo real (novos chamados, tarefas, acompanhamentos).</li>";
+      echo "</ul>";
+      echo "<h2>Como configurar?</h2>";
+      echo "<p>Na aba <b>Configuração</b>, defina a URL Base do seu servidor e escolha entre as opções GLPI 10 (App-Token) ou GLPI 11 (OAuth2). Em seguida, gere o QR Code para os seus técnicos lerem no App.</p>";
+      echo "<h2>Testes em Andamento</h2>";
+      echo "<p>No momento, estamos validando a recepção dos tokens de push via API. Se o login no App estiver configurado corretamente, o token do usuário deve aparecer na aba <b>Dispositivos Registrados</b> logo após o login no App.</p>";
+      echo "</td></tr>";
+      echo "</table>";
+      echo "</div>";
    }
 
    public function showConfigFormSection() {
@@ -337,6 +366,58 @@ class PluginIfluxConfig extends CommonDBTM {
              echo "<code>".htmlentities($responseTrunc)."</code>";
              echo "<button type='button' style='position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 2px 6px; font-size: 10px; margin: 0; background: #2196f3; color: white; border: none; border-radius: 3px; cursor: pointer; transition: background 0.2s; font-weight: bold;' onclick='var btn=this; navigator.clipboard.writeText(btn.getAttribute(\"data-text\")).then(function(){ btn.innerText=\"Copiado!\"; btn.style.background=\"#2fe417\"; setTimeout(function(){ btn.innerText=\"Copiar\"; btn.style.background=\"#2196f3\"; }, 1500); })' data-text='".$escResponse."'>Copiar</button>";
              echo "</td>";
+            echo "</tr>";
+         }
+      }
+      echo "</table>";
+      echo "</div>";
+   }
+
+   public function showApiLogsList() {
+      global $DB;
+
+      $query = [
+         'SELECT' => '*',
+         'FROM' => 'glpi_plugin_iflux_logs_api',
+         'ORDER' => 'id DESC',
+         'LIMIT' => 100
+      ];
+      $result = $DB->request($query);
+
+      echo "<div class='center'>";
+      
+      echo "<table class='tab_cadre_fixe'>";
+      echo "<tr><th colspan='7'>Logs de Requisições na API Customizada (Últimas 100)</th></tr>";
+      echo "<tr class='tab_bg_2' style='font-weight: bold;'>";
+      echo "<td>ID</td><td>Data/Hora</td><td>IP</td><td>Método</td><td>Endpoint</td><td>Status</td><td>Payload / Resposta</td>";
+      echo "</tr>";
+
+      if (count($result) === 0) {
+         echo "<tr class='tab_bg_1'><td colspan='7' class='center'>Nenhuma requisição recebida ainda.</td></tr>";
+      } else {
+         foreach ($result as $row) {
+            $statusLabel = ($row['status_code'] >= 200 && $row['status_code'] < 300) ? 
+               "<span style='background: #2fe417; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>".$row['status_code']."</span>" : 
+               "<span style='background: #f44336; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>".$row['status_code']."</span>";
+
+            $payloadTrunc = strlen($row['payload']) > 40 ? substr($row['payload'], 0, 40) . '...' : $row['payload'];
+            $responseTrunc = strlen($row['response']) > 40 ? substr($row['response'], 0, 40) . '...' : $row['response'];
+
+            echo "<tr class='tab_bg_1'>";
+            echo "<td>".$row['id']."</td>";
+            echo "<td>".$row['date_creation']."</td>";
+            echo "<td>".htmlentities($row['ip_address'] ?? '')."</td>";
+            echo "<td>".htmlentities($row['method'] ?? '')."</td>";
+            echo "<td>".htmlentities($row['endpoint'] ?? '')."</td>";
+            echo "<td>".$statusLabel."</td>";
+            
+            $escPayload = htmlentities($row['payload'] ?? '', ENT_QUOTES, 'UTF-8');
+            $escResponse = htmlentities($row['response'] ?? '', ENT_QUOTES, 'UTF-8');
+            
+            echo "<td>";
+            echo "<div style='font-size: 11px; margin-bottom: 4px;'><b>IN:</b> <code title='".$escPayload."'>".htmlentities($payloadTrunc)."</code></div>";
+            echo "<div style='font-size: 11px;'><b>OUT:</b> <code title='".$escResponse."'>".htmlentities($responseTrunc)."</code></div>";
+            echo "</td>";
             echo "</tr>";
          }
       }

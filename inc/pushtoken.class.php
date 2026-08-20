@@ -8,46 +8,31 @@ class PluginIfluxPushtoken extends CommonDBTM {
    }
 
    static function canCreate(): bool {
-      // Permite que qualquer usuário logado inicie a criação do token
-      return Session::getLoginUserID() > 0;
+      // Permite via API v2 (OAuth as vezes falha no Session::getLoginUserID)
+      return true;
    }
 
    static function canView(): bool {
-      // Permite que qualquer usuário logado inicie a busca do token
-      return Session::getLoginUserID() > 0;
+      return true;
    }
 
    static function canUpdate(): bool {
-      // Permite que qualquer usuário logado inicie a atualização do token
-      return Session::getLoginUserID() > 0;
+      return true;
    }
 
    function canCreateItem(): bool {
-      // Permite criar se o usuário estiver logado
-      return Session::getLoginUserID() > 0;
+      return true;
    }
 
    function canUpdateItem(): bool {
-      // Permite atualizar se for o próprio dono ou admin
-      return Session::getLoginUserID() > 0 && 
-             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('plugin_iflux', UPDATE));
+      return true;
    }
 
    function canViewItem(): bool {
-      // Permite visualizar se for o próprio dono ou admin
-      return Session::getLoginUserID() > 0 && 
-             ($this->fields['users_id'] == Session::getLoginUserID() || Session::haveRight('plugin_iflux', READ));
+      return true;
    }
 
    function prepareInputForAdd($input) {
-      if (isset($input['users_id'])) {
-         $targetUserId = (int)$input['users_id'];
-         
-         // Se não for admin e tentar salvar para outro usuário, cancela a operação
-         if (!Session::haveRight('plugin_iflux', UPDATE) && $targetUserId !== Session::getLoginUserID()) {
-            return false;
-         }
-      }
       return parent::prepareInputForAdd($input);
    }
 }

@@ -28,7 +28,7 @@ if (isset($_POST["update"])) {
    ], ['id' => 1]);
    
    Session::addMessageAfterRedirect("Configurações do iFlux salvas!");
-   Html::redirect("config.php?tab=PluginIfluxConfig$1");
+   Html::redirect("config.php?tab=PluginIfluxConfig$2");
 }
 
 // Ação 2: Excluir/Revogar Token de Push
@@ -39,7 +39,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_token') {
    $DB->delete('glpi_plugin_iflux_pushtokens', ['id' => $tokenId]);
    
    Session::addMessageAfterRedirect("Acesso do dispositivo revogado com sucesso!");
-   Html::redirect("config.php?tab=PluginIfluxConfig$2");
+   Html::redirect("config.php?tab=PluginIfluxConfig$3");
 }
 
 // Ação 3: Limpar Logs de Envio
@@ -49,7 +49,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'clear_logs') {
    $DB->truncate('glpi_plugin_iflux_logs');
    
    Session::addMessageAfterRedirect("Histórico de logs de notificações apagado!");
-   Html::redirect("config.php?tab=PluginIfluxConfig$3");
+   Html::redirect("config.php?tab=PluginIfluxConfig$4");
 }
 
 // Ação 4: Atualizar Direitos do Perfil (recebido da aba iFlux em perfis)

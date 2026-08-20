@@ -173,9 +173,9 @@ class PluginIfluxConfig extends CommonDBTM {
          if ($isGlpi11) {
              $qrDataPayload['client_id'] = $data['client_id'];
              $qrDataPayload['client_secret'] = $data['client_secret'];
-         } else {
-             $qrDataPayload['token'] = $data['app_token'];
          }
+         // Sempre enviar o token, pois o GLPI 11 também usa a V1 (Legacy) como porto seguro para Push Tokens
+         $qrDataPayload['token'] = $data['app_token'];
 
          $secretKey = "iFlux@AppSync#2026";
          $qrJson = json_encode($qrDataPayload);

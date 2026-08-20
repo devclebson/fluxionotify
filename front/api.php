@@ -18,6 +18,8 @@ if ($requestMethod === 'OPTIONS') {
 
 define('GLPI_ROOT', '../../..');
 define('DO_NOT_CHECK_HTTP_REFERER', 1);
+define('GLPI_API', true);
+define('GLPI_AJAX', true);
 $AJAX_INCLUDE = 1;
 include GLPI_ROOT . '/inc/includes.php';
 
@@ -52,12 +54,15 @@ function jsonResponse($statusCode, $data) {
 // Analisa o payload JSON
 $payloadData = json_decode($rawBody, true) ?: [];
 
-// Pega os headers
-$headers = getallheaders();
+// Pega os headers de forma segura (evita Fatal Error no getallheaders em Nginx/PHP-FPM)
 $appToken = '';
-foreach ($headers as $key => $value) {
-    if (strtolower($key) === 'app-token') {
-        $appToken = trim($value);
+if (isset($_SERVER['HTTP_APP_TOKEN'])) {
+    $appToken = trim($_SERVER['HTTP_APP_TOKEN']);
+} else {
+    foreach ($_SERVER as $name => $value) {
+        if (substr($name, 0, 5) == 'HTTP_' && strtolower($name) == 'http_app_token') {
+            $appToken = trim($value);
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 <?php
-class PluginIfluxNotification {
+class PluginFluxionotifyNotification {
    
    /**
     * Dispara a notificação Push via Expo para todos os técnicos atribuídos ao chamado
@@ -46,7 +46,7 @@ class PluginIfluxNotification {
          // Buscar o token de push deste usuário na nossa tabela do plugin
          $tokenResult = $DB->request([
             'SELECT' => 'pushtoken',
-            'FROM'   => 'glpi_plugin_iflux_pushtokens',
+            'FROM'   => 'glpi_plugin_fluxionotify_pushtokens',
             'WHERE'  => ['users_id' => $userId]
          ]);
          
@@ -63,7 +63,7 @@ class PluginIfluxNotification {
             }
             
             // Grava o log detalhado de notificação no banco de dados do GLPI
-            $DB->insert('glpi_plugin_iflux_logs', [
+            $DB->insert('glpi_plugin_fluxionotify_logs', [
                'date_creation' => date('Y-m-d H:i:s'),
                'tickets_id'    => $ticketId,
                'users_id'      => $userId,
@@ -97,7 +97,7 @@ class PluginIfluxNotification {
     */
    static function sendForTicket(Ticket $ticket) {
       $ticketId = $ticket->fields['id'];
-      $ticketName = $ticket->fields['name'] ?? 'Novo Chamado';
+      $ticketName = "Novo chamado registrado";
       
       $title = "Novo Chamado (#$ticketId)";
       self::notifyTicketActors($ticketId, $title, $ticketName, 'TICKET_NEW');
@@ -108,7 +108,7 @@ class PluginIfluxNotification {
     */
    static function sendForTicketUpdate(Ticket $ticket) {
       $ticketId = $ticket->fields['id'];
-      $ticketName = $ticket->fields['name'] ?? 'Chamado Atualizado';
+      $ticketName = "Chamado Atualizado";
       
       // Detecta se houve mudança de status para colocar no título
       $statusText = '';
@@ -130,23 +130,8 @@ class PluginIfluxNotification {
       }
       $ticketId = $followup->fields['items_id'];
       
-      // Buscar o nome do chamado
-      global $DB;
-      $ticketResult = $DB->request([
-         'SELECT' => 'name',
-         'FROM'   => 'glpi_tickets',
-         'WHERE'  => ['id' => $ticketId]
-      ]);
-      $ticketRow = $ticketResult->current();
-      $ticketName = $ticketRow ? $ticketRow['name'] : 'Chamado';
-      
-      $content = strip_tags(html_entity_decode($followup->fields['content'] ?? ''));
-      $contentTruncated = (function_exists('mb_substr') && function_exists('mb_strlen')) ? 
-         (mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '...' : $content) :
-         (strlen($content) > 100 ? substr($content, 0, 100) . '...' : $content);
-      
-      $title = "Novo Acompanhamento (#$ticketId)";
-      $message = "No chamado: $ticketName\n\"$contentTruncated\"";
+      $title = "Acompanhamento (#$ticketId)";
+      $message = "Novo acompanhamento adicionado";
       
       self::notifyTicketActors($ticketId, $title, $message);
    }
@@ -160,23 +145,8 @@ class PluginIfluxNotification {
          return;
       }
       
-      // Buscar o nome do chamado
-      global $DB;
-      $ticketResult = $DB->request([
-         'SELECT' => 'name',
-         'FROM'   => 'glpi_tickets',
-         'WHERE'  => ['id' => $ticketId]
-      ]);
-      $ticketRow = $ticketResult->current();
-      $ticketName = $ticketRow ? $ticketRow['name'] : 'Chamado';
-      
-      $content = strip_tags(html_entity_decode($task->fields['content'] ?? ''));
-      $contentTruncated = (function_exists('mb_substr') && function_exists('mb_strlen')) ? 
-         (mb_strlen($content) > 100 ? mb_substr($content, 0, 100) . '...' : $content) :
-         (strlen($content) > 100 ? substr($content, 0, 100) . '...' : $content);
-      
-      $title = "Nova Tarefa (#$ticketId)";
-      $message = "No chamado: $ticketName\n\"$contentTruncated\"";
+      $title = "Tarefa (#$ticketId)";
+      $message = "Nova tarefa atribuída";
       
       self::notifyTicketActors($ticketId, $title, $message);
    }

@@ -1,10 +1,10 @@
 <?php
-class PluginIfluxConfig extends CommonDBTM {
+class PluginFluxionotifyConfig extends CommonDBTM {
    
-   static $rightname = 'plugin_iflux';
+   static $rightname = 'plugin_fluxionotify';
    
    static function getTypeName($nb = 0) {
-      return 'Configuração iFlux';
+      return 'Configuração FluxIO Notify';
    }
 
    static function getIcon() {
@@ -56,10 +56,10 @@ class PluginIfluxConfig extends CommonDBTM {
    public function showWelcomeTab() {
       echo "<div class='center' style='margin-top: 15px;'>";
       echo "<table class='tab_cadre_fixe'>";
-      echo "<tr><th colspan='2'>Bem-vindo ao Plugin iFlux App Sync</th></tr>";
+      echo "<tr><th colspan='2'>Bem-vindo ao Plugin FluxIO Notify</th></tr>";
       echo "<tr class='tab_bg_1'><td colspan='2' style='padding: 20px; text-align: left; font-size: 14px; line-height: 1.6;'>";
       echo "<h2>O que este plugin faz?</h2>";
-      echo "<p>O <b>iFlux App Sync</b> é a ponte de comunicação oficial entre o seu servidor GLPI e o aplicativo mobile iFlux. Ele gerencia:</p>";
+      echo "<p>O <b>FluxIO Notify</b> é a ponte de comunicação oficial entre o seu servidor GLPI e o aplicativo mobile FluxIO Notify. Ele gerencia:</p>";
       echo "<ul>";
       echo "<li>Sincronização de Tokens de Push Notification (Expo) para cada usuário.</li>";
       echo "<li>Autenticação segura e geração de QR Code criptografado para facilitar o login no App.</li>";
@@ -78,7 +78,7 @@ class PluginIfluxConfig extends CommonDBTM {
       global $DB, $CFG_GLPI;
 
       // Busca as configurações no banco
-      $result = $DB->request(['FROM' => 'glpi_plugin_iflux_configs', 'WHERE' => ['id' => 1]]);
+      $result = $DB->request(['FROM' => 'glpi_plugin_fluxionotify_configs', 'WHERE' => ['id' => 1]]);
       $data = $result->current() ?: [
          'app_token'     => '', 
          'api_url'       => $CFG_GLPI['url_base'], 
@@ -89,7 +89,7 @@ class PluginIfluxConfig extends CommonDBTM {
       echo "<div class='center' style='margin-top: 15px;'>";
       echo "<form action='config.php' method='post'>";
       echo "<table class='tab_cadre_fixe'>";
-      echo "<tr><th colspan='2'>Configuração do Servidor iFlux (Mobile)</th></tr>";
+      echo "<tr><th colspan='2'>Configuração do Servidor FluxIO Notify (Mobile)</th></tr>";
       
       echo "<tr class='tab_bg_1'><td>URL Base do GLPI</td>";
       echo "<td><input type='text' name='api_url' value='".$data['api_url']."' size='50' style='margin: 0;'></td></tr>";
@@ -177,7 +177,7 @@ class PluginIfluxConfig extends CommonDBTM {
          // Sempre enviar o token, pois o GLPI 11 também usa a V1 (Legacy) como porto seguro para Push Tokens
          $qrDataPayload['token'] = $data['app_token'];
 
-         $secretKey = "iFlux@AppSync#2026";
+         $secretKey = "FluxIO Notify@AppSync#2026";
          $qrJson = json_encode($qrDataPayload);
          $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length('aes-256-cbc'));
          $encrypted = openssl_encrypt($qrJson, 'aes-256-cbc', $secretKey, 0, $iv);
@@ -189,17 +189,17 @@ class PluginIfluxConfig extends CommonDBTM {
          if (file_exists($jsFile)) {
             echo "<script>" . file_get_contents($jsFile) . "</script>";
          } else {
-            $jsPath = Plugin::getWebDir('iflux') . '/js/qrcode.min.js';
-            echo "<script src='$jsPath' onload='initIfluxQrCode()'></script>";
+            $jsPath = Plugin::getWebDir('fluxionotify') . '/js/qrcode.min.js';
+            echo "<script src='$jsPath' onload='initFluxIONotifyQrCode()'></script>";
          }
          
          $versionText = $isGlpi11 ? "GLPI 11 (OAuth2)" : "GLPI 10 (App-Token)";
-         echo "<h3>QR Code Seguro para App iFlux ($versionText)</h3>";
+         echo "<h3>QR Code Seguro para App FluxIO Notify ($versionText)</h3>";
          echo "<p style='color: #666; font-size: 12px;'>Este QR Code está criptografado (AES-256-CBC) e só pode ser lido pelo aplicativo oficial.</p>";
          echo "<div id='qrcode' style='display: inline-block; padding: 10px; background: #fff; border: 10px solid #fff; box-shadow: 0 0 10px #ccc; margin-bottom: 20px;'></div>";
          
          echo "<script>
-            function initIfluxQrCode() {
+            function initFluxIONotifyQrCode() {
                var el = document.getElementById('qrcode');
                if (el && !el.hasChildNodes()) {
                   new QRCode(el, {
@@ -213,7 +213,7 @@ class PluginIfluxConfig extends CommonDBTM {
                }
             }
             if (typeof QRCode !== 'undefined') {
-               initIfluxQrCode();
+               initFluxIONotifyQrCode();
             }
          </script>";
       }
@@ -231,7 +231,7 @@ class PluginIfluxConfig extends CommonDBTM {
             'u.realname',
             'u.firstname'
          ],
-         'FROM' => 'glpi_plugin_iflux_pushtokens AS t',
+         'FROM' => 'glpi_plugin_fluxionotify_pushtokens AS t',
          'INNER JOIN' => [
             'glpi_users AS u' => [
                'ON' => [
@@ -293,7 +293,7 @@ class PluginIfluxConfig extends CommonDBTM {
             'u.realname',
             'u.firstname'
          ],
-         'FROM' => 'glpi_plugin_iflux_logs AS l',
+         'FROM' => 'glpi_plugin_fluxionotify_logs AS l',
          'LEFT JOIN' => [
             'glpi_users AS u' => [
                'ON' => [
@@ -378,7 +378,7 @@ class PluginIfluxConfig extends CommonDBTM {
 
       $query = [
          'SELECT' => '*',
-         'FROM' => 'glpi_plugin_iflux_logs_api',
+         'FROM' => 'glpi_plugin_fluxionotify_logs_api',
          'ORDER' => 'id DESC',
          'LIMIT' => 100
       ];

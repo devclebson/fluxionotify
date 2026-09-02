@@ -1,5 +1,5 @@
-<?php
-// API Independente para iFlux - GLPI 11 (Bypass do CSRF/Router)
+﻿<?php
+// API Independente para FluxIO Notify - GLPI 11 (Bypass do CSRF/Router)
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
@@ -33,7 +33,7 @@ $pushToken = trim($payloadData['pushtoken'] ?? '');
 
 if ($userId <= 0 || empty($pushToken)) {
     http_response_code(400);
-    echo json_encode(["error" => "Bad Request", "message" => "users_id e pushtoken são obrigatórios."]);
+    echo json_encode(["error" => "Bad Request", "message" => "users_id e pushtoken sÃ£o obrigatÃ³rios."]);
     exit;
 }
 
@@ -44,11 +44,11 @@ if (!file_exists($configPath)) {
 }
 if (!file_exists($configPath)) {
     http_response_code(500);
-    echo json_encode(["error" => "Internal Error", "message" => "config_db.php não encontrado."]);
+    echo json_encode(["error" => "Internal Error", "message" => "config_db.php nÃ£o encontrado."]);
     exit;
 }
 
-// Ler o conteúdo do config_db.php
+// Ler o conteÃºdo do config_db.php
 $configContent = file_get_contents($configPath);
 $dbhost = $dbuser = $dbpassword = $dbdefault = '';
 
@@ -67,27 +67,27 @@ try {
     $pdo = new PDO("mysql:host=$dbhost;dbname=$dbdefault;charset=utf8mb4", $dbuser, $dbpassword);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Validação do App-Token
-    $stmt = $pdo->prepare("SELECT app_token FROM glpi_plugin_iflux_configs WHERE id = 1");
+    // ValidaÃ§Ã£o do App-Token
+    $stmt = $pdo->prepare("SELECT app_token FROM glpi_plugin_fluxionotify_configs WHERE id = 1");
     $stmt->execute();
     $configData = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$configData || trim($configData['app_token']) !== trim($appToken)) {
         http_response_code(403);
-        echo json_encode(["error" => "Forbidden", "message" => "App-Token inválido."]);
+        echo json_encode(["error" => "Forbidden", "message" => "App-Token invÃ¡lido."]);
         exit;
     }
 
     // Atualizar Token
-    $stmt = $pdo->prepare("SELECT id FROM glpi_plugin_iflux_pushtokens WHERE users_id = ?");
+    $stmt = $pdo->prepare("SELECT id FROM glpi_plugin_fluxionotify_pushtokens WHERE users_id = ?");
     $stmt->execute([$userId]);
     $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($existing) {
-        $stmt = $pdo->prepare("UPDATE glpi_plugin_iflux_pushtokens SET pushtoken = ? WHERE users_id = ?");
+        $stmt = $pdo->prepare("UPDATE glpi_plugin_fluxionotify_pushtokens SET pushtoken = ? WHERE users_id = ?");
         $stmt->execute([$pushToken, $userId]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO glpi_plugin_iflux_pushtokens (users_id, pushtoken) VALUES (?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO glpi_plugin_fluxionotify_pushtokens (users_id, pushtoken) VALUES (?, ?)");
         $stmt->execute([$userId, $pushToken]);
     }
 
@@ -95,5 +95,6 @@ try {
 
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(["error" => "Database Error", "message" => "Falha na transação DB."]);
+    echo json_encode(["error" => "Database Error", "message" => "Falha na transaÃ§Ã£o DB."]);
 }
+

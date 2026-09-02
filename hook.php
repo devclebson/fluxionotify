@@ -1,14 +1,14 @@
 <?php
 
 // Executado ao clicar em "Instalar" no painel do GLPI
-function plugin_iflux_install() {
+function plugin_fluxionotify_install() {
    global $DB;
-
-   $migration = new Migration(PLUGIN_IFLUX_VERSION);
+   
+   $migration = new Migration(PLUGIN_FLUXIONOTIFY_VERSION);
 
    // Tabela para armazenar os tokens de push do aplicativo de cada usuário
-   if (!$DB->tableExists('glpi_plugin_iflux_pushtokens')) {
-      $query = "CREATE TABLE `glpi_plugin_iflux_pushtokens` (
+   if (!$DB->tableExists('glpi_plugin_fluxionotify_pushtokens')) {
+      $query = "CREATE TABLE `glpi_plugin_fluxionotify_pushtokens` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
                   `users_id` int(11) NOT NULL,
                   `pushtoken` varchar(255) NOT NULL,
@@ -19,8 +19,8 @@ function plugin_iflux_install() {
    }
 
    // Tabela para armazenar as configurações (Base URL, App Token, OAuth2) que irão pro QR Code
-   if (!$DB->tableExists('glpi_plugin_iflux_configs')) {
-      $query = "CREATE TABLE `glpi_plugin_iflux_configs` (
+   if (!$DB->tableExists('glpi_plugin_fluxionotify_configs')) {
+      $query = "CREATE TABLE `glpi_plugin_fluxionotify_configs` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
                   `app_token` varchar(255) DEFAULT NULL,
                   `api_url` varchar(255) DEFAULT NULL,
@@ -31,17 +31,17 @@ function plugin_iflux_install() {
       $migration->addPostQuery($query);
 
       // Inserir registro base para a tela de configurações
-      $migration->addPostQuery("INSERT IGNORE INTO `glpi_plugin_iflux_configs` (`id`, `app_token`, `api_url`, `client_id`, `client_secret`) VALUES (1, '', '', '', '')");
+      $migration->addPostQuery("INSERT IGNORE INTO `glpi_plugin_fluxionotify_configs` (`id`, `app_token`, `api_url`, `client_id`, `client_secret`) VALUES (1, '', '', '', '')");
    } else {
       // Adicionar colunas novas caso o plugin já estivesse instalado sem elas
-      if (!$DB->fieldExists('glpi_plugin_iflux_configs', 'client_id')) {
-         $migration->addPostQuery("ALTER TABLE `glpi_plugin_iflux_configs` ADD `client_id` varchar(255) DEFAULT NULL, ADD `client_secret` varchar(255) DEFAULT NULL");
+      if (!$DB->fieldExists('glpi_plugin_fluxionotify_configs', 'client_id')) {
+         $migration->addPostQuery("ALTER TABLE `glpi_plugin_fluxionotify_configs` ADD `client_id` varchar(255) DEFAULT NULL, ADD `client_secret` varchar(255) DEFAULT NULL");
       }
    }
 
    // Tabela para armazenar os logs de envio de notificações
-   if (!$DB->tableExists('glpi_plugin_iflux_logs')) {
-      $query = "CREATE TABLE `glpi_plugin_iflux_logs` (
+   if (!$DB->tableExists('glpi_plugin_fluxionotify_logs')) {
+      $query = "CREATE TABLE `glpi_plugin_fluxionotify_logs` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
                   `date_creation` datetime DEFAULT NULL,
                   `tickets_id` int(11) DEFAULT NULL,
@@ -56,8 +56,8 @@ function plugin_iflux_install() {
    }
 
    // Tabela para armazenar os logs de requisições recebidas pela API customizada
-   if (!$DB->tableExists('glpi_plugin_iflux_logs_api')) {
-      $query = "CREATE TABLE `glpi_plugin_iflux_logs_api` (
+   if (!$DB->tableExists('glpi_plugin_fluxionotify_logs_api')) {
+      $query = "CREATE TABLE `glpi_plugin_fluxionotify_logs_api` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
                   `date_creation` datetime DEFAULT NULL,
                   `ip_address` varchar(100) DEFAULT NULL,
@@ -75,9 +75,11 @@ function plugin_iflux_install() {
    // A classe Migration deve assumir a execução.
    $migration->executeMigration();
 
-   // Registrar o direito 'plugin_iflux' na tabela glpi_profilerights
-   if (class_exists('ProfileRight')) {
-      ProfileRight::addProfileRights(['plugin_iflux']);
+   // Registrar o direito 'plugin_fluxionotify' na tabela glpi_profilerights
+   try {
+      if (class_exists('ProfileRight') && method_exists('ProfileRight', 'addProfileRights')) {
+         ProfileRight::addProfileRights(['plugin_fluxionotify']);
+      }
 
       // Buscar o perfil super-admin (por ID 4 ou variações de nome) e conceder permissões completas (31)
       $profileResult = $DB->request([
@@ -97,37 +99,40 @@ function plugin_iflux_install() {
             'FROM'  => 'glpi_profilerights',
             'WHERE' => [
                'profiles_id' => $superadminId,
-               'name'        => 'plugin_iflux'
+               'name'        => 'plugin_fluxionotify'
             ]
          ]);
          
          if (count($rightResult) === 0) {
             $DB->insert('glpi_profilerights', [
                'profiles_id' => $superadminId,
-               'name'        => 'plugin_iflux',
+               'name'        => 'plugin_fluxionotify',
                'rights'      => 31 // LER (1) | ATUALIZAR (2) | CRIAR (4) | EXCLUIR (8) | APAGAR (16)
             ]);
          } else {
             $DB->update('glpi_profilerights', ['rights' => 31], [
                'profiles_id' => $superadminId,
-               'name'        => 'plugin_iflux'
+               'name'        => 'plugin_fluxionotify'
             ]);
          }
       }
+   } catch (\Throwable $e) {
+      // Ignorar erros de direitos de perfil para não quebrar a instalação
+      error_log("FluxIO Notify Profile Error: " . $e->getMessage());
    }
 
    return true;
 }
 
 // Executado ao clicar em "Desinstalar" no GLPI
-function plugin_iflux_uninstall() {
+function plugin_fluxionotify_uninstall() {
    global $DB;
 
    $tables = [
-      'glpi_plugin_iflux_pushtokens',
-      'glpi_plugin_iflux_configs',
-      'glpi_plugin_iflux_logs',
-      'glpi_plugin_iflux_logs_api'
+      'glpi_plugin_fluxionotify_pushtokens',
+      'glpi_plugin_fluxionotify_configs',
+      'glpi_plugin_fluxionotify_logs',
+      'glpi_plugin_fluxionotify_logs_api'
    ];
 
    foreach ($tables as $table) {
@@ -137,8 +142,12 @@ function plugin_iflux_uninstall() {
    }
 
    // Remover direitos registrados
-   if (class_exists('ProfileRight')) {
-      ProfileRight::deleteProfileRights(['plugin_iflux']);
+   try {
+      if (class_exists('ProfileRight') && method_exists('ProfileRight', 'deleteProfileRights')) {
+         ProfileRight::deleteProfileRights(['plugin_fluxionotify']);
+      }
+   } catch (\Throwable $e) {
+      // Ignorar erro
    }
 
    return true;
@@ -147,31 +156,31 @@ function plugin_iflux_uninstall() {
 /**
  * Função Hook engatilhada sempre que um Chamado (Ticket) for criado no GLPI.
  */
-function plugin_iflux_item_add_ticket(Ticket $ticket) {
-   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
-   PluginIfluxNotification::sendForTicket($ticket);
+function plugin_fluxionotify_item_add_ticket(Ticket $ticket) {
+   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   PluginFluxionotifyNotification::sendForTicket($ticket);
 }
 
 /**
  * Função Hook engatilhada sempre que um Chamado (Ticket) for atualizado no GLPI.
  */
-function plugin_iflux_item_update_ticket(Ticket $ticket) {
-   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
-   PluginIfluxNotification::sendForTicketUpdate($ticket);
+function plugin_fluxionotify_item_update_ticket(Ticket $ticket) {
+   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   PluginFluxionotifyNotification::sendForTicketUpdate($ticket);
 }
 
 /**
  * Função Hook engatilhada sempre que um Acompanhamento (ITILFollowup) for criado no GLPI.
  */
-function plugin_iflux_item_add_followup(ITILFollowup $followup) {
-   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
-   PluginIfluxNotification::sendForFollowup($followup);
+function plugin_fluxionotify_item_add_followup(ITILFollowup $followup) {
+   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   PluginFluxionotifyNotification::sendForFollowup($followup);
 }
 
 /**
  * Função Hook engatilhada sempre que uma Tarefa (TicketTask) for criada no GLPI.
  */
-function plugin_iflux_item_add_task(TicketTask $task) {
-   include_once(GLPI_ROOT . '/plugins/iflux/inc/notification.class.php');
-   PluginIfluxNotification::sendForTask($task);
+function plugin_fluxionotify_item_add_task(TicketTask $task) {
+   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   PluginFluxionotifyNotification::sendForTask($task);
 }

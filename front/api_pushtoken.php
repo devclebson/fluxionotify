@@ -1,8 +1,8 @@
-<?php
-// Endpoint dedicado para o App iFlux sincronizar o Push Token dinamicamente via Bearer Token
+﻿<?php
+// Endpoint dedicado para o App FluxIO Notify sincronizar o Push Token dinamicamente via Bearer Token
 include("../../../inc/includes.php");
 
-// Cabeçalhos CORS
+// CabeÃ§alhos CORS
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
@@ -17,11 +17,11 @@ $pushToken = $data['pushtoken'] ?? '';
 
 if (empty($authHeader) || empty($pushToken)) {
     http_response_code(400);
-    echo json_encode(['error' => 'Token OAuth2 ou Push Token não fornecido']);
+    echo json_encode(['error' => 'Token OAuth2 ou Push Token nÃ£o fornecido']);
     exit;
 }
 
-// 1. Validar dinamicamente o Bearer Token consultando a própria API V2 do GLPI
+// 1. Validar dinamicamente o Bearer Token consultando a prÃ³pria API V2 do GLPI
 global $CFG_GLPI;
 $apiUrl = $CFG_GLPI['url_base'] . '/api.php/session';
 
@@ -40,7 +40,7 @@ curl_close($ch);
 
 if ($httpCode !== 200 || empty($response)) {
     http_response_code(401);
-    echo json_encode(['error' => 'Token OAuth2 inválido ou expirado', 'details' => $response]);
+    echo json_encode(['error' => 'Token OAuth2 invÃ¡lido ou expirado', 'details' => $response]);
     exit;
 }
 
@@ -49,14 +49,14 @@ $userId = (int)($sessionData['session']['glpiID'] ?? 0);
 
 if (!$userId) {
     http_response_code(401);
-    echo json_encode(['error' => 'Não foi possível determinar o ID do usuário na sessão']);
+    echo json_encode(['error' => 'NÃ£o foi possÃ­vel determinar o ID do usuÃ¡rio na sessÃ£o']);
     exit;
 }
 
-// 2. Burlar temporariamente a trava de sessão do GLPI para o CommonDBTM conseguir salvar
+// 2. Burlar temporariamente a trava de sessÃ£o do GLPI para o CommonDBTM conseguir salvar
 $_SESSION['glpiID'] = $userId;
 
-$tokenItem = new PluginIfluxPushtoken();
+$tokenItem = new PluginFluxionotifyPushtoken();
 $found = $tokenItem->find(['users_id' => $userId]);
 
 if (count($found) > 0) {
@@ -72,11 +72,12 @@ if (count($found) > 0) {
     ]);
 }
 
-// Limpa a sessão fake
+// Limpa a sessÃ£o fake
 unset($_SESSION['glpiID']);
 
 echo json_encode([
     'success' => true, 
-    'message' => 'Push Token salvo com sucesso via Endpoint Dinâmico',
+    'message' => 'Push Token salvo com sucesso via Endpoint DinÃ¢mico',
     'users_id' => $userId
 ]);
+

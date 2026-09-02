@@ -1,6 +1,6 @@
 # 🔌 FluxIO Notify App Sync - GLPI Plugin
 
-O **FluxIO Notify App Sync** é um plugin nativo para o **GLPI 11** projetado para integrar a plataforma de helpdesk com o aplicativo móvel **FluxIO Notify**. Ele gerencia o registro de tokens de notificação push e fornece uma interface administrativa para configurar os parâmetros de conexão do aplicativo.
+O **FluxIO Notify App Sync** é um plugin nativo para o **GLPI 10 e 11** projetado para integrar a plataforma de helpdesk com o aplicativo móvel **FluxIO Notify**. Ele gerencia o registro de tokens de notificação push e fornece uma interface administrativa para configurar os parâmetros de conexão do aplicativo.
 
 ---
 
@@ -46,9 +46,9 @@ Guarda o histórico dos disparos de notificações push.
 
 ## 🪝 Hooks de Integração GLPI
 
-O plugin utiliza os hooks padrões de ciclo de vida do GLPI 11 registrados em `setup.php`:
+O plugin utiliza os hooks padrões de ciclo de vida do GLPI 10 e 11 registrados em `setup.php`:
 
-* **`csrf_compliant`**: Registrado como compatível com tokens CSRF do GLPI 11 para segurança.
+* **`csrf_compliant`**: Registrado como compatível com tokens CSRF do GLPI 10 e 11 para segurança.
 * **`config_page`**: Direciona o painel de configurações para `front/config.php`.
 * **`menu_toadd`**: Adiciona o menu do plugin sob a árvore de configurações do sistema.
 * **`item_add` para `Ticket`**: Dispara a função `plugin_fluxionotify_item_add_ticket()` em `hook.php` sempre que um chamado for adicionado.

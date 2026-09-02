@@ -1,6 +1,6 @@
-# 🔌 Arquitetura do Plugin FluxIO Notify App Sync (GLPI 11)
+# 🔌 Arquitetura do Plugin FluxIO Notify App Sync (GLPI 10 e 11)
 
-Este documento descreve a estrutura interna, as tabelas de banco de dados, o ciclo de ganchos (hooks) e o sistema de disparo de notificações push do plugin **FluxIO Notify App Sync** desenvolvido para o **GLPI 11**.
+Este documento descreve a estrutura interna, as tabelas de banco de dados, o ciclo de ganchos (hooks) e o sistema de disparo de notificações push do plugin **FluxIO Notify App Sync** desenvolvido para o **GLPI 10 e 11**.
 
 ---
 

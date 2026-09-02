@@ -8,7 +8,7 @@
 
 ### 1. Análise de Arquitetura e Segurança
 - Exploramos a fundo a nova estrutura do `fluxionotify`.
-- Constatamos que ele possui uma arquitetura excelente para o GLPI 11:
+- Constatamos que ele possui uma arquitetura excelente para o GLPI 10 e 11:
   - **Notificações em 360 Graus:** O plugin utiliza os Hooks nativos (`item_add_ticket`, `item_update_ticket`, `item_add_followup`, `item_add_task`) para notificar ações, englobando todo o ciclo de vida do chamado.
   - **Prevenção de Auto-Feedback:** Possui uma verificação robusta (`if ($userId == $authorId) { continue; }`) que garante que um técnico não receba no celular uma notificação de uma ação que ele mesmo gerou no painel Web.
   - **Logs e Auditoria:** Foi mapeada a tabela `glpi_plugin_fluxionotify_logs`, que rastreia tudo o que a API do Expo respondeu sobre cada envio Push.

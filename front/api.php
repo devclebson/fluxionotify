@@ -1,5 +1,5 @@
 <?php
-// Script independente do plugin iFlux para receber requisições do App Mobile
+// Script independente do plugin FluxIO Notify para receber requisições do App Mobile
 
 // Captura IMEDIATA dos dados antes do includes.php
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'UNKNOWN';
@@ -37,7 +37,7 @@ function jsonResponse($statusCode, $data) {
     $responseJson = json_encode($data);
     http_response_code($statusCode);
     
-    $DB->insert('glpi_plugin_iflux_logs_api', [
+    $DB->insert('glpi_plugin_fluxionotify_logs_api', [
         'date_creation' => $_SESSION['glpi_currenttime'] ?? date('Y-m-d H:i:s'),
         'ip_address'    => substr($requestIp, 0, 100),
         'method'        => substr($requestMethod, 0, 10),
@@ -71,7 +71,7 @@ if (empty($appToken)) {
     $appToken = $payloadData['app_token'] ?? ''; // Tenta pegar do body
 }
 
-$resultConfig = $DB->request(['FROM' => 'glpi_plugin_iflux_configs', 'WHERE' => ['id' => 1]]);
+$resultConfig = $DB->request(['FROM' => 'glpi_plugin_fluxionotify_configs', 'WHERE' => ['id' => 1]]);
 $configData = $resultConfig->current();
 
 if (!$configData || trim($configData['app_token']) !== trim($appToken)) {
@@ -87,17 +87,17 @@ if ($userId <= 0 || empty($pushToken)) {
 }
 
 // 3. Salva ou atualiza o token
-$existing = $DB->request(['FROM' => 'glpi_plugin_iflux_pushtokens', 'WHERE' => ['users_id' => $userId]])->current();
+$existing = $DB->request(['FROM' => 'glpi_plugin_fluxionotify_pushtokens', 'WHERE' => ['users_id' => $userId]])->current();
 
 if ($existing) {
-    $success = $DB->update('glpi_plugin_iflux_pushtokens', ['pushtoken' => $pushToken], ['users_id' => $userId]);
+    $success = $DB->update('glpi_plugin_fluxionotify_pushtokens', ['pushtoken' => $pushToken], ['users_id' => $userId]);
     if ($success) {
         jsonResponse(200, ["status" => "OK", "message" => "Push token atualizado com sucesso."]);
     } else {
         jsonResponse(500, ["error" => "Internal Error", "message" => "Falha ao atualizar token."]);
     }
 } else {
-    $success = $DB->insert('glpi_plugin_iflux_pushtokens', ['users_id' => $userId, 'pushtoken' => $pushToken]);
+    $success = $DB->insert('glpi_plugin_fluxionotify_pushtokens', ['users_id' => $userId, 'pushtoken' => $pushToken]);
     if ($success) {
         jsonResponse(201, ["status" => "OK", "message" => "Push token registrado com sucesso."]);
     } else {

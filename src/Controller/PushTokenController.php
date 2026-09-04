@@ -1,15 +1,15 @@
 <?php
-namespace GlpiPlugin\Iflux\Controller;
+namespace GlpiPlugin\Fluxionotify\Controller;
 
 use Glpi\Controller\AbstractController;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use PluginIfluxPushtoken;
+use PluginFluxionotifyPushtoken;
 
 class PushTokenController extends AbstractController {
 
-    #[Route("/iflux/pushtoken", name: "plugin_iflux_pushtoken_update", methods: ["POST", "PUT"])]
+    #[Route("/fluxionotify/pushtoken", name: "plugin_fluxionotify_pushtoken_update", methods: ["POST", "PUT"])]
     public function updateToken(Request $request): JsonResponse {
         $user_id = \Session::getLoginUserID();
         
@@ -24,7 +24,7 @@ class PushTokenController extends AbstractController {
             return new JsonResponse(['error' => 'Token não fornecido.'], 400);
         }
 
-        $tokenItem = new PluginIfluxPushtoken();
+        $tokenItem = new PluginFluxionotifyPushtoken();
         
         // Verifica se o token já existe para este usuário
         $found = $tokenItem->find(['users_id' => $user_id]);

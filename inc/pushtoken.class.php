@@ -1,10 +1,10 @@
 <?php
-class PluginIfluxPushtoken extends CommonDBTM {
+class PluginFluxionotifyPushtoken extends CommonDBTM {
    
-   static $rightname = 'plugin_iflux';
+   static $rightname = 'plugin_fluxionotify';
 
    static function getTypeName($nb = 0) {
-      return 'Token de Push iFlux';
+      return 'Token de Push FluxIO Notify';
    }
 
    static function canCreate(): bool {

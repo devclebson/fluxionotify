@@ -1,5 +1,5 @@
 <?php
-class PluginIfluxNotification {
+class PluginFluxionotifyNotification {
    
    /**
     * Dispara a notificação Push via Expo para todos os técnicos atribuídos ao chamado
@@ -46,7 +46,7 @@ class PluginIfluxNotification {
          // Buscar o token de push deste usuário na nossa tabela do plugin
          $tokenResult = $DB->request([
             'SELECT' => 'pushtoken',
-            'FROM'   => 'glpi_plugin_iflux_pushtokens',
+            'FROM'   => 'glpi_plugin_fluxionotify_pushtokens',
             'WHERE'  => ['users_id' => $userId]
          ]);
          
@@ -63,7 +63,7 @@ class PluginIfluxNotification {
             }
             
             // Grava o log detalhado de notificação no banco de dados do GLPI
-            $DB->insert('glpi_plugin_iflux_logs', [
+            $DB->insert('glpi_plugin_fluxionotify_logs', [
                'date_creation' => date('Y-m-d H:i:s'),
                'tickets_id'    => $ticketId,
                'users_id'      => $userId,

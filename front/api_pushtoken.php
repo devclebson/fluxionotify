@@ -1,5 +1,5 @@
 <?php
-// Endpoint dedicado para o App iFlux sincronizar o Push Token dinamicamente via Bearer Token
+// Endpoint dedicado para o App FluxIO Notify sincronizar o Push Token dinamicamente via Bearer Token
 include("../../../inc/includes.php");
 
 // Cabeçalhos CORS
@@ -56,7 +56,7 @@ if (!$userId) {
 // 2. Burlar temporariamente a trava de sessão do GLPI para o CommonDBTM conseguir salvar
 $_SESSION['glpiID'] = $userId;
 
-$tokenItem = new PluginIfluxPushtoken();
+$tokenItem = new PluginFluxionotifyPushtoken();
 $found = $tokenItem->find(['users_id' => $userId]);
 
 if (count($found) > 0) {

@@ -1,14 +1,14 @@
-# 🔌 Arquitetura do Plugin iFlux App Sync (GLPI 11)
+# 🔌 Arquitetura do Plugin FluxIO Notify (GLPI 11)
 
-Este documento descreve a estrutura interna, as tabelas de banco de dados, o ciclo de ganchos (hooks) e o sistema de disparo de notificações push do plugin **iFlux App Sync** desenvolvido para o **GLPI 11**.
+Este documento descreve a estrutura interna, as tabelas de banco de dados, o ciclo de ganchos (hooks) e o sistema de disparo de notificações push do plugin **FluxIO Notify** desenvolvido para o **GLPI 11**.
 
 ---
 
 ## 🛠️ 1. Banco de Dados (Schemas)
 
-O plugin cria três tabelas principais na instalação (`plugin_iflux_install` em `hook.php`):
+O plugin cria três tabelas principais na instalação (`plugin_fluxionotify_install` em `hook.php`):
 
-### 1.1. `glpi_plugin_iflux_configs`
+### 1.1. `glpi_plugin_fluxionotify_configs`
 Armazena a parametrização de conexões que é codificada no QR Code para parear o aplicativo mobile.
 * `id` (INT, Primary Key) - Sempre ID 1.
 * `api_url` (VARCHAR) - URL base do GLPI.
@@ -16,13 +16,13 @@ Armazena a parametrização de conexões que é codificada no QR Code para parea
 * `client_id` (VARCHAR) - Client ID para autenticação OAuth2.
 * `client_secret` (VARCHAR) - Client Secret para autenticação OAuth2.
 
-### 1.2. `glpi_plugin_iflux_pushtokens`
+### 1.2. `glpi_plugin_fluxionotify_pushtokens`
 Armazena os tokens de notificação push gerados pelo Expo em cada dispositivo móvel dos técnicos.
 * `id` (INT, Primary Key).
 * `users_id` (INT, Unique Key) - ID do usuário no GLPI (1:1).
 * `pushtoken` (VARCHAR) - Token do tipo `ExponentPushToken[...]`.
 
-### 1.3. `glpi_plugin_iflux_logs`
+### 1.3. `glpi_plugin_fluxionotify_logs`
 Registra o histórico de notificações disparadas pelo plugin para auditoria rápida.
 * `id` (INT, Primary Key).
 * `date_creation` (DATETIME) - Data/Hora do disparo.
@@ -41,13 +41,13 @@ O plugin monitora o ciclo de vida dos chamados no GLPI registrando gatilhos em `
 
 ```php
 // Registro dos hooks
-$PLUGIN_HOOKS['item_add']['iflux'] = [
-   'Ticket'       => 'plugin_iflux_item_add_ticket',
-   'ITILFollowup' => 'plugin_iflux_item_add_followup',
-   'TicketTask'   => 'plugin_iflux_item_add_task'
+$PLUGIN_HOOKS['item_add']['fluxionotify'] = [
+   'Ticket'       => 'plugin_fluxionotify_item_add_ticket',
+   'ITILFollowup' => 'plugin_fluxionotify_item_add_followup',
+   'TicketTask'   => 'plugin_fluxionotify_item_add_task'
 ];
-$PLUGIN_HOOKS['item_update']['iflux'] = [
-   'Ticket'       => 'plugin_iflux_item_update_ticket'
+$PLUGIN_HOOKS['item_update']['fluxionotify'] = [
+   'Ticket'       => 'plugin_fluxionotify_item_update_ticket'
 ];
 ```
 
@@ -60,7 +60,7 @@ $PLUGIN_HOOKS['item_update']['iflux'] = [
 
 ## 🔐 3. Direitos e Permissões por Perfil (Profiles)
 
-O plugin registra o direito de perfil único `'plugin_iflux'` associado ao módulo nativo de perfis do GLPI através da classe **`PluginIfluxProfile`**:
+O plugin registra o direito de perfil único `'plugin_fluxionotify'` associado ao módulo nativo de perfis do GLPI através da classe **`PluginFluxionotifyProfile`**:
 * **LER (1)**: Permissão para visualizar as configurações básicas e ler a lista de tokens.
 * **ATUALIZAR (2)**: Permissão para alterar as credenciais da API no formulário.
 * **CRIAR (4)**: Permissão para cadastrar novos tokens.
@@ -75,7 +75,7 @@ O plugin registra o direito de perfil único `'plugin_iflux'` associado ao módu
 
 As notificações são disparadas de forma assíncrona ao servidor web do GLPI seguindo estas especificações:
 1. **Busca de Destinatários**: O plugin consulta os técnicos atribuídos ao chamado em `glpi_tickets_users` onde `type = CommonITILActor::ASSIGN`.
-2. **Resgate de Tokens**: Filtra e localiza os push tokens correspondentes na tabela `glpi_plugin_iflux_pushtokens`.
+2. **Resgate de Tokens**: Filtra e localiza os push tokens correspondentes na tabela `glpi_plugin_fluxionotify_pushtokens`.
 3. **Chamada cURL com Timeouts**:
    ```php
    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 2); // Limite de conexão: 2 segundos

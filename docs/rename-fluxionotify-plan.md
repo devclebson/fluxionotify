@@ -93,3 +93,12 @@ O formato do QR Code deve permanecer compatível, salvo quando houver um campo e
 7. Validar GLPI 10 e GLPI 11.
 8. Criar commits separados por escopo.
 9. Fazer push somente ao final, conforme o fluxo do projeto.
+
+## Estado da validação
+
+- [x] Renomeação técnica concluída.
+- [x] Instalação validada no GLPI 10.
+- [x] Instalação validada no GLPI 11.
+- [x] Tabelas e permissões novas aceitas pelos servidores de teste.
+- [ ] Validar novo QR Code e registro de push token pelo aplicativo FluxIO.
+- [ ] Executar lint PHP em ambiente com PHP disponível.

@@ -12,11 +12,11 @@ Este diretório é a fonte canônica da documentação específica do plugin. As
 | `release-1.0.2.md` | Pacote de homologação e limites conhecidos. | Histórico operacional ativo. |
 | `rename-fluxionotify-plan.md` | Plano e rastreabilidade da migração de nome. | Histórico técnico; não usar para alterar protocolos sem revisão. |
 | `Handover_Sessao.md` | Contexto de transição de sessão. | Referência histórica; validar antes de executar instruções. |
+| `api-and-auth/token-endpoint-inventory.md` | Superfícies de token, autenticação e riscos de migração. | Ativo; inventário, não especificação de endpoint aprovado. |
 | `../AGENTS.md` | Convenções operacionais locais. | Ativo. |
 
 ## Documentos a criar quando o primeiro conteúdo for aprovado
 
-- `api-and-auth/`: endpoint suportado, autenticação, autorização e ciclo de token.
 - `validation/`: matriz GLPI 10/11, perfil, evento, visibilidade e entrega.
 - `operations/`: instalação, atualização, backup, retenção de logs e rollback.
 - `decisions/`: QR, destinatários, privacidade e política de logs.

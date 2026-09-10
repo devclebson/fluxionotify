@@ -28,21 +28,25 @@ class PluginFluxionotifyNotification {
       ]);
       
       $sentCount = 0;
-      $notifiedUsers = [];
+      $eligibleCount = 0;
+      $processedUsers = [];
       
       foreach ($result as $row) {
          $userId = $row['users_id'];
+
+         // Um único processamento por usuário, mesmo com múltiplos papéis.
+         if (in_array($userId, $processedUsers)) {
+            continue;
+         }
+         $processedUsers[] = $userId;
          
          // 1. Ignorar o autor da ação (não enviar push para si mesmo)
          if ($userId == $authorId) {
+            self::logSkipped($ticketId, $userId, 'author_ignored');
             continue;
          }
          
-         // 2. Evitar duplicidade caso o usuário esteja em mais de uma função (ex: Técnico e Observador)
-         if (in_array($userId, $notifiedUsers)) {
-            continue;
-         }
-         
+         $eligibleCount++;
          // Buscar o token de push deste usuário na nossa tabela do plugin
          $tokenResult = $DB->request([
             'SELECT' => 'pushtoken',
@@ -50,7 +54,8 @@ class PluginFluxionotifyNotification {
             'WHERE'  => ['users_id' => $userId]
          ]);
          
-         if ($tokenRow = $tokenResult->current()) {
+         $tokenRow = $tokenResult->current();
+         if ($tokenRow && is_string($tokenRow['pushtoken']) && trim($tokenRow['pushtoken']) !== '') {
             $pushToken = $tokenRow['pushtoken'];
             $response = self::sendToExpo($pushToken, $title, $message, ['ticketId' => $ticketId], $categoryId);
             
@@ -73,11 +78,29 @@ class PluginFluxionotifyNotification {
                'response'      => $response ? $response : 'Sem resposta do Expo'
             ]);
             
-            $notifiedUsers[] = $userId;
             $sentCount++;
+         } else {
+            self::logSkipped($ticketId, $userId, 'no_push_token');
          }
       }
+      if ($eligibleCount === 0) {
+         self::logSkipped($ticketId, 0, 'no_eligible_actors');
+      }
       return $sentCount;
+   }
+
+   /** Registra somente metadados fixos, nunca conteúdo ou tokens. */
+   private static function logSkipped($ticketId, $userId, $reason) {
+      global $DB;
+      $DB->insert('glpi_plugin_fluxionotify_logs', [
+         'date_creation' => date('Y-m-d H:i:s'),
+         'tickets_id'    => (int) $ticketId,
+         'users_id'      => (int) $userId,
+         'title'         => 'Diagnóstico de notificação',
+         'message'       => 'Nenhuma tentativa de envio para este registro.',
+         'status'        => 'skipped',
+         'response'      => $reason
+      ]);
    }
 
    static function getStatusLabel($statusId) {
@@ -129,6 +152,10 @@ class PluginFluxionotifyNotification {
          return;
       }
       $ticketId = $followup->fields['items_id'];
+      if (!in_array($followup->fields['is_private'] ?? null, [0, '0', false], true)) {
+         self::logSkipped($ticketId, 0, 'private_or_unknown_visibility');
+         return;
+      }
       
       // Buscar o nome do chamado
       global $DB;
@@ -157,6 +184,10 @@ class PluginFluxionotifyNotification {
    static function sendForTask(TicketTask $task) {
       $ticketId = isset($task->fields['tickets_id']) ? $task->fields['tickets_id'] : (isset($task->fields['items_id']) && $task->fields['itemtype'] === 'Ticket' ? $task->fields['items_id'] : null);
       if (!$ticketId) {
+         return;
+      }
+      if (!in_array($task->fields['is_private'] ?? null, [0, '0', false], true)) {
+         self::logSkipped($ticketId, 0, 'private_or_unknown_visibility');
          return;
       }
       

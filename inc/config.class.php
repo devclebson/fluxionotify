@@ -319,9 +319,9 @@ class PluginFluxionotifyConfig extends CommonDBTM {
       }
 
       echo "<table class='tab_cadre_fixe'>";
-      echo "<tr><th colspan='7'>Logs de Notificações Enviadas (Últimos 100)</th></tr>";
+      echo "<tr><th colspan='7'>Logs de Notificações e Diagnósticos (Últimos 100)</th></tr>";
       echo "<tr class='tab_bg_2' style='font-weight: bold;'>";
-      echo "<td>Data/Hora</td><td>Chamado</td><td>Destinatário (Técnico)</td><td>Título</td><td>Mensagem</td><td>Status</td><td>Resposta da API (Expo)</td>";
+      echo "<td>Data/Hora</td><td>Chamado</td><td>Usuário / Destinatário</td><td>Título</td><td>Mensagem</td><td>Status</td><td>Resposta / Diagnóstico</td>";
       echo "</tr>";
 
       if (count($result) === 0) {
@@ -333,6 +333,10 @@ class PluginFluxionotifyConfig extends CommonDBTM {
             $statusLabel = $row['status'] === 'success' ? 
                "<span style='background: #2fe417; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>Sucesso</span>" : 
                "<span style='background: #f44336; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>Falha</span>";
+
+            if ($row['status'] === 'skipped') {
+               $statusLabel = "<span style='background: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;'>Não enviado</span>";
+            }
 
              $responseClean = $row['response'];
              $friendlyResponse = '';

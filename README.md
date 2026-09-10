@@ -1,5 +1,7 @@
 # 🔌 FluxIO Notify - GLPI Plugin
 
+> **1.0.2 — preparação local:** [alterações, testes executados, bloqueio de segurança e checklist GLPI 10/11](docs/release-1.0.2.md). Entrega no chamado #14 ainda não confirmada; esta preparação não representa correção implantada no servidor.
+
 O **FluxIO Notify** é um plugin nativo para o **GLPI 11** projetado para integrar a plataforma de helpdesk com o aplicativo móvel **FluxIO Notify**. Ele gerencia o registro de tokens de notificação push e fornece uma interface administrativa para configurar os parâmetros de conexão do aplicativo.
 
 ---

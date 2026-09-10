@@ -148,7 +148,7 @@ function plugin_fluxionotify_uninstall() {
  * Função Hook engatilhada sempre que um Chamado (Ticket) for criado no GLPI.
  */
 function plugin_fluxionotify_item_add_ticket(Ticket $ticket) {
-   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   include_once(__DIR__ . '/inc/notification.class.php');
    PluginFluxionotifyNotification::sendForTicket($ticket);
 }
 
@@ -156,7 +156,7 @@ function plugin_fluxionotify_item_add_ticket(Ticket $ticket) {
  * Função Hook engatilhada sempre que um Chamado (Ticket) for atualizado no GLPI.
  */
 function plugin_fluxionotify_item_update_ticket(Ticket $ticket) {
-   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   include_once(__DIR__ . '/inc/notification.class.php');
    PluginFluxionotifyNotification::sendForTicketUpdate($ticket);
 }
 
@@ -164,7 +164,7 @@ function plugin_fluxionotify_item_update_ticket(Ticket $ticket) {
  * Função Hook engatilhada sempre que um Acompanhamento (ITILFollowup) for criado no GLPI.
  */
 function plugin_fluxionotify_item_add_followup(ITILFollowup $followup) {
-   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   include_once(__DIR__ . '/inc/notification.class.php');
    PluginFluxionotifyNotification::sendForFollowup($followup);
 }
 
@@ -172,6 +172,6 @@ function plugin_fluxionotify_item_add_followup(ITILFollowup $followup) {
  * Função Hook engatilhada sempre que uma Tarefa (TicketTask) for criada no GLPI.
  */
 function plugin_fluxionotify_item_add_task(TicketTask $task) {
-   include_once(GLPI_ROOT . '/plugins/fluxionotify/inc/notification.class.php');
+   include_once(__DIR__ . '/inc/notification.class.php');
    PluginFluxionotifyNotification::sendForTask($task);
 }

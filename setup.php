@@ -1,5 +1,5 @@
 <?php
-define('PLUGIN_FLUXIONOTIFY_VERSION', '1.0.1');
+define('PLUGIN_FLUXIONOTIFY_VERSION', '1.0.2');
 
 function plugin_init_fluxionotify() {
    global $PLUGIN_HOOKS;
